@@ -2,7 +2,7 @@
 
 > Painel interativo para personal trainers gerenciarem cronogramas de treino — com modo **Display** para TV na academia e modo **Edit** para celular/tablet.
 
-[![Deploy](https://img.shields.io/badge/Deploy-Vercel-000000?logo=vercel&logoColor=white)](https://training-board-sooty.vercel.app/)
+[![Deploy on Vercel](https://img.shields.io/badge/Vercel-000000?style=flat&logo=vercel&logoColor=white)](https://training-board-sooty.vercel.app/)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white)
