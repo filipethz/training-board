@@ -15,7 +15,13 @@ type TrainingStore = {
   toggleHighlight: (slotId: string, studentId: string, exerciseId: string) => void
   addExercise: (slotId: string, studentId: string) => void
   removeExercise: (slotId: string, studentId: string, exerciseId: string) => void
-  reorderExercises: (slotId: string, studentId: string, fromIndex: number, toIndex: number) => void
+    reorderExercises: (slotId: string, studentId: string, fromIndex: number, toIndex: number) => void
+  updateStudentName: (slotId: string, studentId: string, name: string) => void
+  updateSlotTime: (slotId: string, time: string) => void
+  addStudent: (slotId: string) => void
+  removeStudent: (slotId: string, studentId: string) => void
+  addSlot: () => void
+  removeSlot: (slotId: string) => void
 }
 
 export const useTrainingStore = create<TrainingStore>()(
@@ -142,6 +148,79 @@ export const useTrainingStore = create<TrainingStore>()(
                 }
           ),
         })),
+      updateStudentName: (slotId, studentId, name) =>
+        set((state) => ({
+          slots: state.slots.map((slot) =>
+            slot.id !== slotId
+              ? slot
+              : {
+                  ...slot,
+                  students: slot.students.map((student) =>
+                    student.id !== studentId ? student : { ...student, name }
+                  ),
+                }
+          ),
+        })),
+
+      updateSlotTime: (slotId, time) =>
+        set((state) => ({
+          slots: state.slots.map((slot) =>
+            slot.id !== slotId ? slot : { ...slot, time }
+          ),
+        })),
+
+      addStudent: (slotId) =>
+        set((state) => ({
+          slots: state.slots.map((slot) =>
+            slot.id !== slotId
+              ? slot
+              : {
+                  ...slot,
+                  students: [
+                    ...slot.students,
+                    {
+                      id: `stu-${Date.now()}`,
+                      name: 'Novo aluno',
+                      exercises: [],
+                    },
+                  ],
+                }
+          ),
+        })),
+
+      removeStudent: (slotId, studentId) =>
+        set((state) => ({
+          slots: state.slots.map((slot) =>
+            slot.id !== slotId
+              ? slot
+              : {
+                  ...slot,
+                  students: slot.students.filter((s) => s.id !== studentId),
+                }
+          ),
+        })),
+
+      addSlot: () =>
+        set((state) => ({
+          slots: [
+            ...state.slots,
+            {
+              id: `slot-${Date.now()}`,
+              time: '00:00',
+              students: [],
+            },
+          ],
+        })),
+
+      removeSlot: (slotId) =>
+        set((state) => {
+          const remaining = state.slots.filter((s) => s.id !== slotId)
+          return {
+            slots: remaining,
+            activeSlotId:
+              state.activeSlotId === slotId ? (remaining[0]?.id ?? null) : state.activeSlotId,
+          }
+        }),
     }),
     {
       name: 'training-board-store',

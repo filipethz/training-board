@@ -9,7 +9,7 @@ export const mockSlots: Slot[] = [
         id: 'stu-1',
         name: 'Ana Paula',
         exercises: [
-          { id: 'ex-1', name: 'Agachamento livre', equipment: 'barra', sets: '4', reps: '12', measureType: 'load', measureValue: '30kg', highlighted: false },
+          { id: 'ex-1', name: 'Agachamento livr', equipment: 'barra', sets: '4', reps: '12', measureType: 'load', measureValue: '30kg', highlighted: false },
           { id: 'ex-2', name: 'Leg press', equipment: 'máquina', sets: '3', reps: '15', measureType: 'load', measureValue: '80kg', highlighted: false },
           { id: 'ex-3', name: 'Cadeira extensora', equipment: 'máquina', sets: '3', reps: '12', measureType: 'load', measureValue: '25kg', highlighted: true, notes: 'Cuidado com joelho direito' },
         ],

@@ -2,8 +2,11 @@ import { useTrainingStore } from '../store'
 import type { DisplayScale, Exercise } from '../types'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ConfirmDialog } from '../components/ConfirmDialog'
+import { SlotEditDialog } from '../components/SlotEditDialog'
+import { StudentEditDialog } from '../components/StudentEditDialog'
 import { useToastStore } from '../stores/toastStore'
 import { useState } from 'react'
+import { Pencil, Plus } from 'lucide-react'
 
 const scales: { value: DisplayScale; label: string }[] = [
   { value: 'sm', label: 'Pequeno' },
@@ -23,6 +26,12 @@ export function EditView() {
   const addExercise = useTrainingStore((s) => s.addExercise)
   const reorderExercises = useTrainingStore((s) => s.reorderExercises)
   const removeExercise = useTrainingStore((s) => s.removeExercise)
+  const addSlot = useTrainingStore((s) => s.addSlot)
+  const removeSlot = useTrainingStore((s) => s.removeSlot)
+  const updateSlotTime = useTrainingStore((s) => s.updateSlotTime)
+  const addStudent = useTrainingStore((s) => s.addStudent)
+  const removeStudent = useTrainingStore((s) => s.removeStudent)
+  const updateStudentName = useTrainingStore((s) => s.updateStudentName)
   const pushToast = useToastStore((s) => s.push)
 
   const [pendingRemoval, setPendingRemoval] = useState<{
@@ -32,7 +41,22 @@ export function EditView() {
     exerciseName: string
   } | null>(null)
 
+  const [pendingStudentRemoval, setPendingStudentRemoval] = useState<{
+    slotId: string
+    studentId: string
+    studentName: string
+  } | null>(null)
+
+  const [pendingSlotRemoval, setPendingSlotRemoval] = useState<{
+    slotId: string
+    slotTime: string
+  } | null>(null)
+
+  const [slotEditOpen, setSlotEditOpen] = useState(false)
+  const [studentEditId, setStudentEditId] = useState<string | null>(null)
+
   const activeSlot = slots.find((s) => s.id === activeSlotId) ?? slots[0]
+  const studentBeingEdited = activeSlot?.students.find((s) => s.id === studentEditId)
 
   return (
     <div className="space-y-8 max-w-3xl mx-auto pb-20">
@@ -62,11 +86,23 @@ export function EditView() {
         </div>
       </section>
 
-      {/* Abas de horário */}
+      {/* Horários */}
       <section>
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">
-          Horário
-        </h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">
+            Horários
+          </h2>
+          <button
+            onClick={() => {
+              addSlot()
+              pushToast({ message: 'Horário adicionado', variant: 'success' })
+            }}
+            className="flex items-center gap-1 text-xs font-medium text-emerald-400 hover:text-emerald-300 transition-colors"
+          >
+            <Plus size={14} strokeWidth={2.5} />
+            Novo horário
+          </button>
+        </div>
         <div className="flex gap-2 flex-wrap">
           {slots.map((slot) => {
             const isActive = slot.id === activeSlot?.id
@@ -75,25 +111,80 @@ export function EditView() {
                 key={slot.id}
                 onClick={() => setActiveSlot(slot.id)}
                 className={
-                  'px-5 py-2.5 rounded-lg text-base font-semibold transition-colors ' +
+                  'group flex items-center gap-2 pl-5 pr-2 py-2 rounded-lg text-base font-semibold transition-colors ' +
                   (isActive
                     ? 'bg-emerald-500 text-slate-950'
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700')
                 }
               >
                 {slot.time}
+                {isActive && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSlotEditOpen(true)
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.stopPropagation()
+                        setSlotEditOpen(true)
+                      }
+                    }}
+                    title="Editar horário"
+                    aria-label="Editar horário"
+                    className="w-7 h-7 rounded-md flex items-center justify-center bg-black/20 hover:bg-black/40 transition-colors cursor-pointer"
+                  >
+                    <Pencil size={14} strokeWidth={2.5} />
+                  </span>
+                )}
               </button>
             )
           })}
         </div>
       </section>
 
-      {/* Lista de alunos */}
-      {activeSlot?.students.map((student) => (
-        <section key={student.id} className="space-y-3">
-          <h2 className="text-xl font-bold text-white">{student.name}</h2>
+      {/* Alunos */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">
+            Alunos
+          </h2>
+          {activeSlot && (
+            <button
+              onClick={() => {
+                addStudent(activeSlot.id)
+                pushToast({ message: 'Aluno adicionado', variant: 'success' })
+              }}
+              className="flex items-center gap-1 text-xs font-medium text-emerald-400 hover:text-emerald-300 transition-colors"
+            >
+              <Plus size={14} strokeWidth={2.5} />
+              Novo aluno
+            </button>
+          )}
+        </div>
 
-          <div className="space-y-3">
+        {activeSlot?.students.length === 0 && (
+          <p className="text-sm text-slate-500 text-center py-6">
+            Nenhum aluno neste horário. Clique em "Novo aluno" para adicionar.
+          </p>
+        )}
+
+        {activeSlot?.students.map((student) => (
+          <div key={student.id} className="space-y-3">
+            <div className="flex items-center gap-2">
+              <h3 className="text-xl font-bold text-white">{student.name}</h3>
+              <button
+                onClick={() => setStudentEditId(student.id)}
+                title="Editar aluno"
+                aria-label="Editar aluno"
+                className="w-7 h-7 rounded-md flex items-center justify-center text-slate-400 hover:text-emerald-400 hover:bg-slate-800 transition-colors"
+              >
+                <Pencil size={15} strokeWidth={2.5} />
+              </button>
+            </div>
+
             <AnimatePresence initial={false}>
               {student.exercises.map((ex, idx) => (
                 <motion.div
@@ -106,7 +197,9 @@ export function EditView() {
                 >
                   <ExerciseEditor
                     exercise={ex}
-                    onChange={(patch) => updateExercise(activeSlot.id, student.id, ex.id, patch)}
+                    onChange={(patch) =>
+                      updateExercise(activeSlot.id, student.id, ex.id, patch)
+                    }
                     onToggleHighlight={() => {
                       toggleHighlight(activeSlot.id, student.id, ex.id)
                       pushToast({
@@ -117,31 +210,96 @@ export function EditView() {
                         variant: 'info',
                       })
                     }}
-                    onRemove={() => setPendingRemoval({ slotId: activeSlot.id, studentId: student.id, exerciseId: ex.id, exerciseName: ex.name })}
-                    onMoveUp={() => reorderExercises(activeSlot.id, student.id, idx, idx - 1)}
-                    onMoveDown={() => reorderExercises(activeSlot.id, student.id, idx, idx + 1)}
+                    onRemove={() =>
+                      setPendingRemoval({
+                        slotId: activeSlot.id,
+                        studentId: student.id,
+                        exerciseId: ex.id,
+                        exerciseName: ex.name,
+                      })
+                    }
+                    onMoveUp={() =>
+                      reorderExercises(activeSlot.id, student.id, idx, idx - 1)
+                    }
+                    onMoveDown={() =>
+                      reorderExercises(activeSlot.id, student.id, idx, idx + 1)
+                    }
                     isFirst={idx === 0}
                     isLast={idx === student.exercises.length - 1}
                   />
                 </motion.div>
               ))}
             </AnimatePresence>
-          </div>
 
-          <button
-            onClick={() => {
-              addExercise(activeSlot.id, student.id)
-              pushToast({
-                message: 'Exercício adicionado',
-                variant: 'success',
-              })
-            }}
-            className="w-full py-3 rounded-lg border-2 border-dashed border-slate-700 text-slate-400 hover:border-emerald-500 hover:text-emerald-400 transition-colors text-sm font-medium"
-          >
-            + Adicionar exercício
-          </button>
-        </section>
-      ))}
+            <button
+              onClick={() => {
+                addExercise(activeSlot.id, student.id)
+                pushToast({
+                  message: 'Exercício adicionado',
+                  variant: 'success',
+                })
+              }}
+              className="w-full py-3 rounded-lg border-2 border-dashed border-slate-700 text-slate-400 hover:border-emerald-500 hover:text-emerald-400 transition-colors text-sm font-medium"
+            >
+              + Adicionar exercício
+            </button>
+          </div>
+        ))}
+      </section>
+
+      {/* Modal: edição de horário */}
+      {activeSlot && (
+        <SlotEditDialog
+          open={slotEditOpen}
+          initialTime={activeSlot.time}
+          canRemove={slots.length > 1}
+          onClose={() => setSlotEditOpen(false)}
+          onSave={(time) => {
+            updateSlotTime(activeSlot.id, time)
+            setSlotEditOpen(false)
+            pushToast({
+              message: 'Horário atualizado',
+              description: time,
+              variant: 'success',
+            })
+          }}
+          onRequestRemove={() => {
+            setSlotEditOpen(false)
+            setPendingSlotRemoval({
+              slotId: activeSlot.id,
+              slotTime: activeSlot.time,
+            })
+          }}
+        />
+      )}
+
+      {/* Modal: edição de aluno */}
+      {activeSlot && studentBeingEdited && (
+        <StudentEditDialog
+          open={studentEditId !== null}
+          initialName={studentBeingEdited.name}
+          onClose={() => setStudentEditId(null)}
+          onSave={(name) => {
+            updateStudentName(activeSlot.id, studentBeingEdited.id, name)
+            setStudentEditId(null)
+            pushToast({
+              message: 'Aluno atualizado',
+              description: name,
+              variant: 'success',
+            })
+          }}
+          onRequestRemove={() => {
+            setStudentEditId(null)
+            setPendingStudentRemoval({
+              slotId: activeSlot.id,
+              studentId: studentBeingEdited.id,
+              studentName: studentBeingEdited.name,
+            })
+          }}
+        />
+      )}
+
+      {/* Modal: remoção de exercício */}
       <ConfirmDialog
         open={pendingRemoval !== null}
         title="Remover exercício?"
@@ -168,6 +326,59 @@ export function EditView() {
           setPendingRemoval(null)
         }}
         onCancel={() => setPendingRemoval(null)}
+      />
+
+      {/* Modal: remoção de aluno */}
+      <ConfirmDialog
+        open={pendingStudentRemoval !== null}
+        title="Remover aluno?"
+        description={
+          pendingStudentRemoval
+            ? `"${pendingStudentRemoval.studentName}" e todos os seus exercícios serão removidos. Essa ação não pode ser desfeita.`
+            : ''
+        }
+        confirmLabel="Remover"
+        variant="danger"
+        onConfirm={() => {
+          if (pendingStudentRemoval) {
+            removeStudent(
+              pendingStudentRemoval.slotId,
+              pendingStudentRemoval.studentId,
+            )
+            pushToast({
+              message: 'Aluno removido',
+              description: pendingStudentRemoval.studentName,
+              variant: 'success',
+            })
+          }
+          setPendingStudentRemoval(null)
+        }}
+        onCancel={() => setPendingStudentRemoval(null)}
+      />
+
+      {/* Modal: remoção de horário */}
+      <ConfirmDialog
+        open={pendingSlotRemoval !== null}
+        title="Remover horário?"
+        description={
+          pendingSlotRemoval
+            ? `O horário ${pendingSlotRemoval.slotTime} e todos os seus alunos serão removidos. Essa ação não pode ser desfeita.`
+            : ''
+        }
+        confirmLabel="Remover"
+        variant="danger"
+        onConfirm={() => {
+          if (pendingSlotRemoval) {
+            removeSlot(pendingSlotRemoval.slotId)
+            pushToast({
+              message: 'Horário removido',
+              description: pendingSlotRemoval.slotTime,
+              variant: 'success',
+            })
+          }
+          setPendingSlotRemoval(null)
+        }}
+        onCancel={() => setPendingSlotRemoval(null)}
       />
     </div>
   )
@@ -276,7 +487,9 @@ function ExerciseEditor({
           {/* Valor da medida (condicional) */}
           {exercise.measureType !== 'none' && (
             <div>
-              <label className={labelClass}>{measureLabels[exercise.measureType].label}</label>
+              <label className={labelClass}>
+                {measureLabels[exercise.measureType].label}
+              </label>
               <input
                 type="text"
                 value={exercise.measureValue ?? ''}
